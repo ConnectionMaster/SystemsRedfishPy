@@ -18,16 +18,17 @@ import socket
 from collections import OrderedDict
 from core.trace import TraceLevel, Trace
 from version import __version__
+from json import JSONDecodeError
 
 ################################################################################
 # RedfishConfig
 #
 # All JSON configuration parameters are mapped directly to commands. For example:
-#     !mcip will update JSON { "mcip" : "" }
+#     !ipaddress will update JSON { "ipaddress" : "" }
 #     !username will update JSON { "username" : "" }
 #     !password will update JSON { "password" : "" }
 #
-# See dictionary initilization below for mapping.
+# See dictionary initialization below for mapping.
 #
 ################################################################################
 class RedfishConfig:
@@ -37,11 +38,10 @@ class RedfishConfig:
     sessionValid = False
     configurationfile = ''
     fileSettings = {}
+    listener = None
 
     @classmethod
     def __init__(self, filename):
-
-        self.configurationfile = filename
 
         #
         # Add new configuration settings here, they will be automatically written to the JSON file.
@@ -50,16 +50,17 @@ class RedfishConfig:
         # self.dictionary['key'][1] = description
         #
         self.dictionary['annotate']         = [True, 'True|False  Provides a banner for every line of script file processed. Default is True.']
-        self.dictionary['brand']            = ['systems', '<string>    Specifies the folder to retrieve commands from. Default is systems, but example is also provided. This is a subfolder of commands.']
+        self.dictionary['brand']            = ['systems', '<string>    Specifies the subfolder of commands to use. Default is systems, but example is provided.']
         self.dictionary['certificatecheck'] = [False, 'True|False  When False, the URL will be opened using context=ssl._create_unverified_context. Default is False.']
         self.dictionary['dumphttpdata']     = [False, 'True|False  Display all HTTP data read from the Redfish Service. Useful for additional info. Default is False.']
         self.dictionary['dumpjsondata']     = [False, 'True|False  Display all JSON data read from the Redfish Service. Default is False.']
         self.dictionary['dumppostdata']     = [False, 'True|False  Display all data that is sent via an HTTP POST operation. Default is False.']
         self.dictionary['entertoexit']      = [False, 'True|False  When True, pressing Enter in interactive mode will exit the tool. Default is False.']
         self.dictionary['http']             = ['http', 'http|https  Switch between use http:// and https://. Default is https.']
-        self.dictionary['httpbasicauth']    = [False, 'True|False  When True, use Redfish basic authentication, when False use a session. Default is False.']
+        self.dictionary['basicauth']        = [False, 'True|False  When True, use basic authentication, when False use a session. Default is False.']
         self.dictionary['linktestdelay']    = [0, '<int>       How long to delay between URLs when running the <redfish urls> command. Default is 0.']
-        self.dictionary['mcip']             = ['', '<string>    Change all HTTP communications to use this new IP address.']
+        self.dictionary['ipaddress']        = ['', '<string>    Change all HTTP communications to use this new IP address.']
+        self.dictionary['port']             = ['80', '<string>    Change all HTTP communications to use this new Port.']
         self.dictionary['password']         = ['', '<string>    Change the password to [password] that is used to log in to the Redfish Service.']
         self.dictionary['serviceversion']   = [2, '1|2         Specify the Redfish Service version. This changes command behavior based on supported schemas. Default is 2.']
         self.dictionary['showelapsed']      = [False, 'True|False  Display how long each command took. Default is False.']
@@ -67,26 +68,58 @@ class RedfishConfig:
         self.dictionary['urltimeout']       = [300, '<int>       How long to wait for a URL request before timing out. Default is 300.']
         self.dictionary['usefinalslash']    = [True, 'True|False  When True, all Redfish URIs will have a slash as the final character in the URL. Default is True.']
         self.dictionary['username']         = ['', '<string>    Change the username to [name] that is used to log in to the Redfish Service.']
+        self.dictionary['listenerusessl']   = ["True", 'True|False  Switch between use http and https. Default is https.']
+        self.dictionary['listenerip']       = ['localhost', '<string>    Event and Telemetry Listener IP address.']
+        self.dictionary['listenerport']     = ['8080', '<string>    Event and Telemetry Listener port.']
+        self.dictionary['certfile']         = ['', '<string>    Certificate PEM file for the SSL connection.']
+        self.dictionary['keyfile']          = ['', '<string>    Private Key PEM file for the SSL connection.']
 
-        Trace.log(TraceLevel.DEBUG, '++ Initialize Redfish API configuration from ({})...'.format(filename))
+        self.load_config(filename)
+
+
+    @classmethod
+    def load_config(self, filename):
+
+        self.configurationfile = filename
+
+        Trace.log(TraceLevel.ALWAYS, '-- Using settings from ({})'.format(filename))
 
         currentvalue = 0
         
-        with open(filename, "r") as read_file:
-            try:            
-                Trace.log(TraceLevel.VERBOSE, 'Open JSON configuration file {}'.format(filename))
-                self.fileSettings = json.load(read_file)
+        try:            
+            with open(filename, "r") as read_file:
+                try:
+                    Trace.log(TraceLevel.VERBOSE, 'Open JSON configuration file {}'.format(filename))
+                    self.fileSettings = json.load(read_file)
+                    Trace.log(TraceLevel.VERBOSE, 'self.fileSettings: {}'.format(self.fileSettings))
 
-                for key in self.dictionary:
-                    if key in self.fileSettings:
-                        Trace.log(TraceLevel.DEBUG, '   >> key={}, value={}'.format(key, self.fileSettings[key]))
-                        self.dictionary[key][0] = self.fileSettings[key]
-                    Trace.log(TraceLevel.DEBUG, '   -- {0: <8} : {1}'.format(key, self.dictionary[key][0]))
+                    for key in self.dictionary:
+                        if key in self.fileSettings:
+                            self.dictionary[key][0] = self.fileSettings[key]
+                        Trace.log(TraceLevel.DEBUG, '   -- {0: <16} : {1}'.format(key, self.dictionary[key][0]))
 
-                self.update_trace('trace', currentvalue, self.dictionary['trace'][0])
-                self.save()
-            except:
-                Trace.log(TraceLevel.ERROR, 'Cannot parse JSON configuration file {}'.format(read_file))
+                    self.update_trace('trace', currentvalue, self.dictionary['trace'][0])
+
+                    # Configuration compatibility checks, update old settings to new using stored value
+                    if 'httpbasicauth' in self.fileSettings:
+                        value1 = self.fileSettings['httpbasicauth']
+                        self.dictionary['basicauth'][0] = self.fileSettings['httpbasicauth']
+                        Trace.log(TraceLevel.VERBOSE, '   UPDATE {} (old) to {} (new) using value ({})'.format('httpbasicauth', 'basicauth', value1))
+
+                    if 'mcip' in self.fileSettings:
+                        value1 = self.fileSettings['mcip']
+                        self.dictionary['ipaddress'][0] = self.fileSettings['mcip']
+                        Trace.log(TraceLevel.VERBOSE, '   UPDATE {} (old) to {} (new) using value ({})'.format('mcip', 'ipaddress', value1))
+
+                    # Save the configuration settings back to the file
+                    self.save()
+
+                except TypeError as e:
+                    Trace.log(TraceLevel.ALWAYS, 'JSON configuration file ({}) does not contain alphabetical characters'.format(filename))
+                    raise JSONDecodeError(e, filename, 0)
+
+        except (JSONDecodeError, FileNotFoundError) as e:
+            Trace.log(TraceLevel.ALWAYS, 'Exception parsing JSON configuration file ({}) - {}'.format(filename, repr(e)))
 
 
     @classmethod
@@ -128,6 +161,12 @@ class RedfishConfig:
         try:
             if self.dictionary[key][0] == 'True':
                 results = True
+            elif self.dictionary[key][0] == 'true':
+                results = True
+            elif self.dictionary[key][0] == 'yes':
+                results = True
+            elif self.dictionary[key][0] == 'Yes':
+                results = True
             else:
                 value = int(self.dictionary[key][0])
                 if (value == 1):
@@ -141,10 +180,22 @@ class RedfishConfig:
         return int(self.get_value('urltimeout'))
 
     @classmethod
-    def get_mcip(self):
-        mcip = socket.gethostbyname(self.get_value('mcip'))
-        Trace.log(TraceLevel.DEBUG, 'get_mcip() = {}'.format(mcip))
-        return mcip
+    def get_ipaddress(self):
+        ipaddress = socket.gethostbyname(self.get_value('ipaddress'))
+        Trace.log(TraceLevel.DEBUG, 'get_ipaddress() = {}'.format(ipaddress))
+        return ipaddress
+
+    @classmethod
+    def get_port(self):
+        port = self.get_value('port')
+        Trace.log(TraceLevel.DEBUG, 'get_port() = {}'.format(port))
+        return port
+
+    @classmethod
+    def get_basicauth(self):
+        basicauth = self.get_bool('basicauth')
+        Trace.log(TraceLevel.DEBUG, 'get_basicauth() = {}'.format(basicauth))
+        return basicauth
 
     @classmethod
     def get_tracelevel(self):
@@ -174,12 +225,13 @@ class RedfishConfig:
         try:
             with open(self.configurationfile, "w") as write_file:
                 # Sync file settings with current class values
+                self.fileSettings = {}
                 for key in self.dictionary:
+                    Trace.log(TraceLevel.TRACE, '   ++ CFG: {} = {}'.format(key, self.dictionary[key][0]))
                     self.fileSettings[key] = self.dictionary[key][0]
                 json.dump(self.fileSettings, write_file, indent=4)
         except:
             Trace.log(TraceLevel.ERROR, '-- Unable to save configuration to ({}) - check spelling'.format(self.configurationfile))
-            pass
 
     @classmethod
     def update(self, parameter, value):
@@ -204,7 +256,6 @@ class RedfishConfig:
             updated = True
         except:
             Trace.log(TraceLevel.ERROR, '   -- Unable to update parameter ({}) - check spelling'.format(parameter))
-            pass
 
         return (updated)
 

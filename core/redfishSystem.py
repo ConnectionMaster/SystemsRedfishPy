@@ -71,11 +71,12 @@ class RedfishSystem:
     # Display all discovered URIs
     #
     @classmethod
-    def reset_discovered(cls, redfishConfig):
+    def reset_discovered(cls, redfishConfig, rescan):
         Trace.log(TraceLevel.INFO, '-- Reseting discovered URLs...')
         cls.systemDict = {}
         cls.successfulRootInit = False
-        cls.initialize_service_root_uris(redfishConfig)
+        if rescan:
+            cls.initialize_service_root_uris(redfishConfig)
 
     #
     # Store a new URI
@@ -121,8 +122,9 @@ class RedfishSystem:
                 newValue = link.jsonData["v1"]
                 cls.store_uri_value("Root", newValue)
             else:
-                Trace.log(TraceLevel.ERROR, 'System Init: Invalid URL link for ({})'.format(url))
-                cls.successfulRootInit = False
+                # Since this service does not respond to /redfish, default to v1
+                cls.store_uri_value("Root", "/redfish/v1")
+                Trace.log(TraceLevel.INFO, 'System Init: Default to /redfish/v1')
 
             # GET Redfish Root Services
             if (cls.successfulRootInit):
@@ -138,8 +140,8 @@ class RedfishSystem:
         
                 cls.store_uri_value("Accounts", cls.get_uri_simple("AccountService") + 'Accounts/')
                 cls.store_uri_value("Sessions", cls.get_uri_simple("SessionService") + 'Sessions/')
-                cls.store_uri_value("metadata", cls.get_uri_simple("Root") + '/$metadata/' )
-                cls.store_uri_value("odata", cls.get_uri_simple("Root") + '/odata/')
+                cls.store_uri_value("metadata", cls.get_uri_simple("Root") + '$metadata/' )
+                cls.store_uri_value("odata", cls.get_uri_simple("Root") + 'odata/')
     
         except Exception as e:
             Trace.log(TraceLevel.ERROR, 'Unable to initialize Service Root URIs, exception: {}'.format(e))
@@ -200,12 +202,12 @@ class RedfishSystem:
                     cls.store_uri_value(controller_id_str, controller_name)
                     controller_id += 1
 
-                    # Use EthernetInterfaces to compare to 'mcip' to determine active controller
+                    # Use EthernetInterfaces to compare to 'ipaddress' to determine active controller
                     neweth = '/redfish/v1/Managers/' + controller_name + '/EthernetInterfaces/A'
                     link = UrlAccess.process_request(redfishConfig, UrlStatus(neweth), 'GET', True, None)
                     if (link.valid and link.jsonData is not None and 'IPv4Addresses' in link.jsonData):
                         for ipv4 in link.jsonData['IPv4Addresses']:
-                            if ('Address' in ipv4 and ipv4['Address'] == redfishConfig.get_mcip()):
+                            if ('Address' in ipv4 and ipv4['Address'] == redfishConfig.get_ipaddress()):
                                 cls.store_uri_value('ActiveControllerId', controller_name)
                                 cls.store_uri_value('StorageActiveController', cls.get_uri_simple('Storage') + controller_name + '/')
 

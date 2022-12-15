@@ -86,16 +86,14 @@ class CommandHandler(CommandHandlerBase):
             Trace.log(TraceLevel.INFO, '[] Status       : {}'.format(self.link.urlStatus))
             Trace.log(TraceLevel.INFO, '[] Reason       : {}'.format(self.link.urlReason))
 
-        if self.context != '':
-            print(' [] Context    : {}'.format(self.context))
 
         if (self.link != None and self.link.response != None):
             Trace.log(TraceLevel.INFO, '')
-            Trace.log(TraceLevel.INFO, '[] HTTP Headers : {}'.format(self.link.response.getheaders()))
+            Trace.log(TraceLevel.INFO, '[] HTTP Headers : {}'.format(self.link.response.headers))
 
-        if (self.link != None and self.link.jsonData != None):
+        if (self.link != None and self.link.response != None):
             Trace.log(TraceLevel.INFO, '')
-            Trace.log(TraceLevel.INFO, '[] HTTP Data    : {}'.format(self.link.jsonData))
+            Trace.log(TraceLevel.INFO, '[] HTTP Data    : {}'.format(self.link.response.text))
 
         if (self.link != None and self.link.jsonData != None):
             Trace.log(TraceLevel.INFO, '')

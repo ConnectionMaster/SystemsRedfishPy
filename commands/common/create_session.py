@@ -14,12 +14,12 @@
 #
 # @command create session
 #
-# @synopsis Establish a session with the Redfish Service (using mcip, username, and password)
+# @synopsis Establish a session with the Redfish Service (using ipaddress, username, and password)
 #
 # @description-start
 #
 # This command attempts to establish a session with the Redfish Service. It will use the
-# mcip, username, and password that are defined in the configuration settings. Use '!dump' to
+# ipaddress, username, and password that are defined in the configuration settings. Use '!dump' to
 # view all configuration settings. Use '!setting value' to update the setting and value.
 #
 # Example:
@@ -50,7 +50,7 @@ class CommandHandler(CommandHandlerBase):
 
     def prepare_url(self, redfishConfig, command):
         Trace.log(TraceLevel.INFO, '   -- ServiceVersion: {}'.format(redfishConfig.get_version()))
-        Trace.log(TraceLevel.INFO, '   -- IP Address    : {}://{}'.format(redfishConfig.get_value('http'), redfishConfig.get_mcip()))
+        Trace.log(TraceLevel.INFO, '   -- IP Address    : {}://{}:{}'.format(redfishConfig.get_value('http'), redfishConfig.get_ipaddress(), redfishConfig.get_port()))
         return (RedfishSystem.get_uri(redfishConfig, 'Sessions'))
 
     @classmethod
@@ -66,7 +66,7 @@ class CommandHandler(CommandHandlerBase):
         JsonBuilder.addElement('main', JsonType.STRING, 'UserName', redfishConfig.get_value('username'))
         JsonBuilder.addElement('main', JsonType.STRING, 'Password', redfishConfig.get_value('password'))
 
-        link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', False, json.dumps(JsonBuilder.getElement('main'), indent=4))
+        link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', False, JsonBuilder.getElement('main'))
 
         Trace.log(TraceLevel.TRACE, '   -- urlStatus={} urlReason={}'.format(link.urlStatus, link.urlReason))
 
@@ -81,15 +81,19 @@ class CommandHandler(CommandHandlerBase):
                 Trace.log(TraceLevel.TRACE, '   -- {0: <12}: {1}'.format('UserName', link.jsonData['UserName']))
             else:
                 Trace.log(TraceLevel.TRACE, '   -- JSON data was (None)')
-            
-            redfishConfig.sessionKey = link.response.getheader('X-Auth-Token', '')
+
+            if 'X-Auth-Token' in link.response.headers:
+                redfishConfig.sessionKey = link.response.headers['X-Auth-Token']
+            else:
+                Trace.log(TraceLevel.WARN, 'HTTP response headers does not contain X-Auth-Token')
+
             Trace.log(TraceLevel.TRACE, '   -- {0: <12}: {1}'.format('sessionKey', redfishConfig.sessionKey))
             if (redfishConfig.sessionKey != ''):
                 redfishConfig.sessionValid = True
 
         else:
-            if self.link != None:
-                self.link.print_status()
+            if link != None:
+                link.print_status()
 
     @classmethod
     def display_results(self, redfishConfig):

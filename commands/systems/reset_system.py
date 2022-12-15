@@ -14,11 +14,11 @@
 #
 # @command reset system [<json | file>]
 #
-# @synopsis Reset the active storage controller based on the 'mcip' configuration value.
+# @synopsis Reset the active storage controller based on the 'ipaddress' configuration value.
 #
 # @description-start
 #
-# 'reset system' will reset the storage controller associated with the 'mcip' configuration
+# 'reset system' will reset the storage controller associated with the 'ipaddress' configuration
 # value. The 'SystemId' discovery value is used for this purpose. This command uses the
 # following Redfish operation:
 #
@@ -73,11 +73,11 @@ class CommandHandler(CommandHandlerBase):
         if not jsonData:
             jsonData = { "ResetType": "GracefulRestart" }
 
-        link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', True, json.dumps(jsonData, indent=4))
+        link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', True, jsonData)
 
         # Execute: http POST /redfish/v1/Systems/{SystemId}/Actions/ComputerSystem.Reset
         Trace.log(TraceLevel.INFO, '-- http post {} {}'.format(url, jsonData))
-        link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', True, json.dumps(jsonData, indent=4))
+        link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', True, jsonData)
         Trace.log(TraceLevel.INFO, '   -- {0: <14}: {1}'.format('Status', link.urlStatus))
         Trace.log(TraceLevel.INFO, '   -- {0: <14}: {1}'.format('Reason', link.urlReason))
 

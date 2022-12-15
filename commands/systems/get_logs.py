@@ -28,9 +28,9 @@
 #         options: controller, drive
 #
 #     'logtype' - Required for 'drive', not used for 'controller'
-#         options: disk, diskfarm, diskibt, disksm2, diskidd, diskfarmlct, diskfarmfield,
-#                 diskfarmts1, diskfarmts2, diskfarmsf1, diskfarmsf2, diskfarmsf3,
-#                 diskfarmsf4, diskfarmfactory
+#         options: disk, diskfarm, diskibt, disksm2, diskiddcap, diskiddoff, diskfarmlct,
+#                 diskfarmfield, diskfarmts1, diskfarmts2, diskfarmsf1, diskfarmsf2,
+#                 diskfarmsf3, diskfarmsf4, diskfarmfactory
 #
 #     'drivenumber' - Required for 'drive', not used for 'controller'
 #         options: enclosure.slot, for example 0.24
@@ -156,7 +156,7 @@ def process_task_status(redfishConfig, link, log_filename):
 
         Trace.log(TraceLevel.INFO, "")
         Trace.log(TraceLevel.INFO, "++ POST get logs (controller, DownloadLogData)")
-        link3 = UrlAccess.process_request(redfishConfig, UrlStatus(link.url), 'POST', True, json.dumps(JsonBuilder.getElement('main'), indent=4), decode=False)
+        link3 = UrlAccess.process_request(redfishConfig, UrlStatus(link.url), 'POST', True, JsonBuilder.getElement('main'), decode=False)
         display_log_results(link3, log_filename, display_contents=False)
 
 
@@ -279,12 +279,12 @@ class CommandHandler(CommandHandlerBase):
 
         if component == 'controller':
             Trace.log(TraceLevel.INFO, "++ POST get logs (controller, CollectControllerLog)")
-            link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', True, json.dumps(JsonBuilder.getElement('main'), indent=4), decode=False)
+            link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', True, JsonBuilder.getElement('main'), decode=False)
             process_task_status(redfishConfig, link, log_filename)
 
         else:
             Trace.log(TraceLevel.INFO, "++ POST get logs (drive, {}, {})".format(logtype, drivenumber))
-            link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', True, json.dumps(JsonBuilder.getElement('main'), indent=4), decode=False)
+            link = UrlAccess.process_request(redfishConfig, UrlStatus(url), 'POST', True, JsonBuilder.getElement('main'), decode=False)
             display_log_results(link, log_filename, display_contents=True)
 
     @classmethod

@@ -78,7 +78,7 @@ class ArgExtract:
 
         else:
             # Treat the parameter as inline JSON data
-            pos2 = command.find('}')
+            pos2 = command.rfind('}')
             if pos2 == -1:
                 Trace.log(TraceLevel.ERROR, '   get_json: Unable to find a matching end bracket (}) for inline JSON data')
             else:
@@ -88,7 +88,6 @@ class ArgExtract:
                 except Exception as e:
                     jsonText = ''
                     Trace.log(TraceLevel.ERROR, '   -- get_json: Unable to extract JSON text: Exception: {}'.format(str(e)))
-                    pass
 
                 Trace.log(TraceLevel.TRACE, '   ++ get_json: JSON Text: ({})'.format(jsonText))
                 jsonData = json.loads(jsonText)

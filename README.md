@@ -91,9 +91,10 @@ and you will be presented with a '(redfish)' prompt.
 
 As a best practice, it is suggested that you copy redfishAPI.cfg to myconfig.cfg or any name of your choice. Then edit the following properties in that file:
 * "dumphttpdata": "True",
-* "mcip": "[your-service-ip]",
+* "ipaddress": "[your-service-ip]",
 * "password": "[service-password]",
 * "username": "[service-username]",
+* "http": "http or https",
 
 Additional Properties Note:
 * Set `!serviceversion 1` - to work with the earlier version of the Redfish Service that supported ClassesOfService
@@ -119,6 +120,7 @@ There are five main categories of commands that can be entered.
 
 help - provides a list of available commands
 help [command name] - provides details on a command
+show brands - provides a list of all available brands
 
 ### Configuration Commands
 
@@ -133,7 +135,7 @@ To configure which controller to talk to:
 
 | Command              | Description |
 | -------------------- | ----------- |
-| !mcip 10.235.221.120 | Change all HTTP communications to use this new ip address. |
+| !ipaddress 10.235.221.120 | Change all HTTP communications to use this new ip address. |
 | !username [name]     | Change the username to `[name]` that is used to log in to the Redfish Service. |
 | !password [password] | Change the password to `[password]` that is used to log in to the Redfish Service. |
 
@@ -142,7 +144,7 @@ When running commands, you have several options to help debug issues, and to con
 | Command                         | Description |
 | ------------------------------- | ----------- |
 | !annotate [True,False]          | Provides a banner for every line of script file processed. Default is `True`. |
-| !brand [product]                | Specifies the folder to retrieve commands from. Default is `systems`, but `example` is also provided. This is a subfolder of `commands`. |
+| !brand [product]                | Specifies the subfolder of commands to use. Default is `systems`, but `example` is provided. |
 | !certificatecheck [True,False]  | When False, the URL will be opened using context=ssl._create_unverified_context. Default is `False`. |
 | !dump                           | Print out all configuration options. This is useful to learn what settings are available. |
 | !dumphttpdata [True,False]      | Display all HTTP data read from the Redfish Service. Useful for additional info. Default is `False`. |
@@ -151,7 +153,8 @@ When running commands, you have several options to help debug issues, and to con
 | !entertoexit [True,False]       | When True, pressing Enter in interactive mode will exit the tool. Default is `False`. |
 | !http [https,https]             | Switch between use http:// and https://. Default is `https`. |
 | !linktestdelay [seconds]        | How long to delay between URLs when running the 'redfish urls' command. Default is `0`. |
-| !mcip [ip]                      | Change all HTTP communications to use this new ip address. |
+| !ipaddress [ip]                 | Change all HTTP communications to use this new ip address. |
+| !port [port]                    | Change all HTTP communications to use this new port value, default is 80. |
 | !password [password]            | Change the password to `[password]` that is used to log in to the Redfish Service. |
 | !serviceversion [1,2]           | Specify the Redfish Service version. This changes command behavior based on supported schemas. Default is `2`. |
 | !showelapsed [True,False]       | Display how long each command took. Default is `False`. |
@@ -164,7 +167,7 @@ When running commands, you have several options to help debug issues, and to con
 ### Redfish Commands
 
 Most commands require that you establish a session with the target Redfish Service. To do so, use 'create session'.
-This command will use the configuration settings, listed above, such as mcip, username, and password and attempt to
+This command will use the configuration settings, listed above, such as ipaddress, username, and password and attempt to
 establish a session.
 
 ```bash
@@ -291,7 +294,7 @@ An example of retrieving disk drive logs.
 
 ## Design
 
-If you want to make changes to this reference client, there is a [design document](design.md) that provides an overview
+If you want to make changes to this reference client, there is a [design document](DESIGN.md) that provides an overview
 of how to make changes and add new commands. The main system design allows you to add commands, and help for
 commands, without having to change any of the underlying core files. The only step needed is to add your new
 command to the 'commands' folder using the prescribed template.
@@ -299,5 +302,5 @@ command to the 'commands' folder using the prescribed template.
 
 ## Unit Testing
 
-If you want to run unit testing, the [unit test document](unittest.md) provides an overview of how to install
+If you want to run unit testing, the [unit test document](UNITTEST.md) provides an overview of how to install
 the reporting packages, run unit tests, and also add new unit tests.

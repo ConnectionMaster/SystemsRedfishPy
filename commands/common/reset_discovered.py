@@ -57,7 +57,7 @@ class CommandHandler(CommandHandlerBase):
 
     @classmethod
     def process_json(self, redfishConfig, url):
-        RedfishSystem.reset_discovered(redfishConfig)
+        RedfishSystem.reset_discovered(redfishConfig, True)
 
     @classmethod
     def display_results(self, redfishConfig):

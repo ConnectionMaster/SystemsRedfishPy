@@ -19,6 +19,7 @@ import sys
 import time
 import traceback
 from core.trace import TraceLevel, Trace
+from os import path
 
 ################################################################################
 # dynamic_import
@@ -60,18 +61,47 @@ class RedfishCommand:
         # The !brand configuration value is what determines the <brand> used. For example, when !brand = 'systems',
         # commands/systems/show_disks.py will be used when the user types 'show disks'.
         # 
-        brand = redfishConfig.get_value('brand')
-        words = command.split(' ')
-        Trace.log(TraceLevel.TRACE, '++ words ({}): {}'.format(len(words), words))
-        if (len(words) == 1):
-            handlerName = 'commands.' + brand + '.' + words[0]
-        elif (len(words) >= 2):
-            if (words[0] == 'help' or words[0] == 'assert' or words[0] == 'version'):
-                handlerName = 'commands.' + brand + '.' + words[0]
-            else:
-                handlerName = 'commands.' + brand + '.' + words[0] + '_' + words[1]
-
         try:
+            brand = redfishConfig.get_value('brand')
+            words = command.split(' ')
+            Trace.log(TraceLevel.TRACE, '++ words ({}): {}'.format(len(words), words))
+
+            #
+            # Determine if the command exists if the brand folder, if not check the common folder.
+            # Otherwise, throw an error
+            #
+            if (len(words) == 1):
+                handlerFile = 'commands/' + brand + '/' + words[0] + '.py'
+                handlerName = 'commands.' + brand + '.' + words[0]
+            elif (len(words) >= 2):
+                if (words[0] == 'help' or words[0] == 'assert' or words[0] == 'version'):
+                    handlerFile = 'commands/' + brand + '/' + words[0] + '.py'
+                    handlerName = 'commands.' + brand + '.' + words[0]
+                else:
+                    handlerFile = 'commands/' + brand + '/' + words[0] + '_' + words[1] + '.py'
+                    handlerName = 'commands.' + brand + '.' + words[0] + '_' + words[1]
+
+            # Check brand version of command
+            if (path.exists(handlerFile) == False):
+                Trace.log(TraceLevel.TRACE, '++ file ({}) does not exist, check common folder'.format(handlerFile))
+                brand = 'common'
+                if (len(words) == 1):
+                    handlerFile = 'commands/' + brand + '/' + words[0] + '.py'
+                    handlerName = 'commands.' + brand + '.' + words[0]
+                elif (len(words) >= 2):
+                    if (words[0] == 'help' or words[0] == 'assert' or words[0] == 'version'):
+                        handlerFile = 'commands/' + brand + '/' + words[0] + '.py'
+                        handlerName = 'commands.' + brand + '.' + words[0]
+                    else:
+                        handlerFile = 'commands/' + brand + '/' + words[0] + '_' + words[1] + '.py'
+                        handlerName = 'commands.' + brand + '.' + words[0] + '_' + words[1]
+
+                # Check common version of command
+                if (path.exists(handlerFile) == False):
+                    Trace.log(TraceLevel.TRACE, '++ file ({}) does not exist, check common folder'.format(handlerFile))
+                    Trace.log(TraceLevel.ERROR, 'Command file ({}) does not exist!'.format(handlerFile))
+                    return None
+
             Trace.log(TraceLevel.DEBUG, '++ input command handler ({})'.format(handlerName))
             handler = dynamic_import(handlerName)
 
@@ -91,10 +121,12 @@ class RedfishCommand:
                     Trace.log(TraceLevel.INFO, '')
                     Trace.log(TraceLevel.INFO, '[] Elapsed time: {}m {}s to execute command'.format(minutes, seconds))
 
+        except UnicodeEncodeError as e:
+            Trace.log(TraceLevel.ERROR, 'EXCEPTION: {}'.format(e))
+
         except ImportError as e:
             Trace.log(TraceLevel.ERROR, 'EXCEPTION: {}'.format(e))
             Trace.log(TraceLevel.ERROR, 'ImportError, No module found for command ({}) using [{}]'.format(command, handlerName))
-            pass
 
         except Exception as e:
             Trace.log(TraceLevel.ERROR, 'EXCEPTION: {}'.format(e))
@@ -102,4 +134,3 @@ class RedfishCommand:
             Trace.log(TraceLevel.INFO, '-'*100)
             traceback.print_exc(file=sys.stdout)
             Trace.log(TraceLevel.INFO, '-'*100)
-            pass

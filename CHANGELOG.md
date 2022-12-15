@@ -1,5 +1,61 @@
 # Change Log
 
+## [2.5.2] - 2022-12-14
+- For Redfish services that don't support /redfish/v1, default version to v1
+- Handle text/plain responses from a service
+
+## [2.5.1] - 2022-12-07
+- Updated the types of drive logs available in 'get logs'.
+
+## [2.5.0] - 2022-11-15
+- Added support of Redfish event listener in the core
+- Added command to start/ stop Redfish event listener
+
+## [2.4.2] - 2022-10-06
+- Log failures to load invalid JSON configuration files
+
+## [2.4.1] - 2022-09-08
+- Install Atheris from Google
+- Fuzz the command input using Atheris from Google
+- Fix crash caused by surrogate pair characters
+
+## [2.4.0] - 2022-08-24
+- Switched to using python requests library for all http operations, urllib has SSL limitations
+- UrlAccess.process_request() does not work with formatted JSON data using json.dumps()
+- Adjustments were required for working with the request response.headers
+- Adjust the `help` command to show help for brand and common commands
+- Display call stack for command exceptions when trace level is DEBUG or higher
+
+## [2.3.0] - 2022-08-01
+- Created new 'common' command folder. Brand is searched first, then common.
+- Added new 'show brands' command which displays all brands and a command count.
+- Moved many commands from 'systems' and 'example' to 'common'
+- Minor bug correction in 'create session'
+- Created a new Open BMC brand (obmc) as a starting point
+- Added new core/display.py with max_width() function
+
+## [2.2.6] - 2022-08-16
+- Skipped warning message for zip content type when using "get logs component=controller".
+- Removed use of the undefined "context" variable, this ensures "http push <firmware_file>" does not exit with an error.
+
+## [2.2.5] - 2022-06-06
+- Replaced `mcip` configuration setting with `ipaddress` to allow clearer integration with other Redfish services.
+- Add `port` as a new configuration setting. By default, this is set to 80 but any valid Redfish service port will work.
+- Changed config option 'httpbasicauth' to 'basicauth' to reduce typing and make the setting more visible.
+
+## [2.2.4] - 2022-04-06
+- New `load config` command making it easier to switch from one config to another.
+- Correction to the StorageGroup steps [Tutorial for Redfish Service v2.4.20](tutorial-redfish-service-v2.md).
+- Changed Trace.NONE to Trace.ALWAYS which will always print the trace entry.
+
+## [2.2.3] - 2022-02-03
+- Small correction to [Tutorial for Redfish Service v2.4.20](tutorial-redfish-service-v2.md).
+
+## [2.2.2] - 2022-01-31
+- New [Tutorial for Redfish Service v2.4.20](tutorial-redfish-service-v2.md).
+- Several changes to json/* example files to update them to the Redfish Service v2.x.x format.
+- Correction to handling JSON data on the command line.
+
 ## [2.2.1] - 2021-11-15
 - Updates to JSON files used to patch StorageGroups since parameter AccessCapabilities is now AccessCapability
 
